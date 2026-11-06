@@ -1,0 +1,14 @@
+name: sska-rec
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pytorch=2.1.1
+  - pytorch-cuda=11.8
+  - numpy>=1.24,<2
+  - pandas>=2,<3
+  - scikit-learn>=1.3,<2
+  - tqdm
+  - pip

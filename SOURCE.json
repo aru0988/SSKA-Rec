@@ -1,0 +1,13 @@
+{
+  "upstream": "https://github.com/BAI-LAB/MPT-Rec/tree/three_task",
+  "local_source_repository": "https://github.com/aru0988/three_task",
+  "local_source_commit": "c12c9454c364a70e244eb95e3ffe24ceeb9a9e1b",
+  "extracted_source_sha256": {
+    "multitaskrec/model.py": "385b023aed6d05b04669827c83e5b7b8ffdcbfbf5a98a675ab9d5ee7f301f213",
+    "multitaskrec/train.py": "beb3db5a5f986a5d134e7d0860e7e8aac181810041db71665087cc5800fafa36",
+    "universal_experiment/model.py": "73ea998623be1f0e72186090726354567b3fe5e6d39283c194648b1d84028de1",
+    "universal_experiment/paired_run.py": "19d4ddc45bc1f71b98b18394e18f583214a5501a9ceb4ac2ced93b8f0b8fb401",
+    "config.py": "402b982457fac3bd291005805bb15bb456ad4121bcc73770f6ddb0a7b54c4ad2"
+  },
+  "release": "standalone refactoring; output identities are distinct from historical experiment checkpoints"
+}

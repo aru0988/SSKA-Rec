@@ -1,0 +1,3 @@
+MPT-Rec backbone and base optimizer code derive from BAI-LAB/MPT-Rec (three_task branch), https://github.com/BAI-LAB/MPT-Rec, and local reproduction fixes in aru0988/three_task.
+The original authors retain their rights in upstream code. No blanket replacement license is asserted for that code.
+SSKA-Rec adds the self-supervised auxiliary expert, selective logit correction and isolated task-copy training. Dataset rights remain with the original providers.

@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env*
+dataset/
+cache/
+outputs/
+*.pt
+*.npz
+*.npy
+*.tar.gz
+*.log
