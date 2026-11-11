@@ -1,0 +1,41 @@
+{
+  "protocol": "census-u-peft-v1-20261111",
+  "source_commit": "040c3116bd970d8667f1d0c7ba5f43f186829c30",
+  "seeds": [
+    1685480945,
+    1685463909,
+    1685477428,
+    1685459668,
+    1685496394
+  ],
+  "targets": [
+    "education",
+    "sex"
+  ],
+  "variants": [
+    "tri_bitfit",
+    "tri_ssf",
+    "tri_adapter"
+  ],
+  "learning_rate": 0.001,
+  "batch_size": 256,
+  "epochs": 30,
+  "patience": 5,
+  "reg_dnn": 3e-05,
+  "lora_rank": 4,
+  "lora_alpha": 4,
+  "validation_fallback": false,
+  "expected_trainable": {
+    "tri_bitfit": 27302,
+    "tri_ssf": 27686,
+    "tri_adapter": 29102
+  },
+  "reuse_variants": [
+    "mpt",
+    "residual",
+    "tri_frozen",
+    "tri_lora",
+    "tri_full"
+  ],
+  "baseline_commit": "e21d439fc325dd30cc094cfeec1ea664eb20c1b5"
+}

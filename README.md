@@ -52,6 +52,7 @@ Each seed shares one frozen backbone and one frozen SSL source. New tasks receiv
 
 - [Census原任务U接入方式](experiments/u-access-census/PLAN.md)
 - [Census二阶段融合与U更新范围](experiments/u-stage2-census/README.md)
+- [Census轻量U微调：BitFit、SSF和Adapter](experiments/u-peft-census/README.md)
 
 ## Source
 
