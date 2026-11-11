@@ -48,6 +48,11 @@ Census: Income/Marital → Education → Sex. KuaiRand: Click/Like → Follow �
 
 Each seed shares one frozen backbone and one frozen SSL source. New tasks receive private trainable U copies; historical task copies stay fixed. Outputs include checkpoint weights, validation curves, raw predictions, metrics, source/data identity and costs. Re-running the same command reuses committed stages; an interrupted stage restarts from its seed.
 
+## Experiments
+
+- [Census原任务U接入方式](experiments/u-access-census/PLAN.md)
+- [Census二阶段融合与U更新范围](experiments/u-stage2-census/README.md)
+
 ## Source
 
 Backbone and base training adapted from [MPT-Rec](https://github.com/BAI-LAB/MPT-Rec), with local reproduction fixes. SSKA modules are in `sska_rec/expert.py` and `sska_rec/core.py`; the training pipeline is in `sska_rec/training.py`. This is a standalone source release, not a redistribution of experimental artifacts. Upstream attribution: [NOTICE](NOTICE).

@@ -1,0 +1,16 @@
+{
+  "protocol":"census-u-stage2-fusion-update-v1-20261111",
+  "source_commit":"040c3116bd970d8667f1d0c7ba5f43f186829c30",
+  "seeds":[1685480945,1685463909,1685477428,1685459668,1685496394],
+  "targets":["education","sex"],
+  "variants":["mpt","residual","tri_frozen","tri_lora","tri_full"],
+  "learning_rate":0.001,
+  "batch_size":256,
+  "epochs":30,
+  "patience":5,
+  "reg_dnn":0.00003,
+  "lora_rank":4,
+  "lora_alpha":4,
+  "validation_fallback":false,
+  "expected_trainable":{"mpt":26799,"residual":116528,"tri_frozen":26918,"tri_lora":30106,"tri_full":100262}
+}
