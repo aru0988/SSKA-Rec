@@ -1,0 +1,16 @@
+{
+  "protocol": "census-original-task-u-access-v1-20261111",
+  "seeds": [1685480945,1685463909,1685477428,1685459668,1685496394],
+  "models": ["mpt","linear","gated_linear","original","bottleneck"],
+  "split_seed": 20260929,
+  "subset_seed": 20261111,
+  "sizes": {"train":20000,"val":5000,"test":10000},
+  "base_epochs":30,
+  "ssl_epochs":30,
+  "access_epochs":30,
+  "patience":5,
+  "learning_rate":0.001,
+  "batch_size":256,
+  "input_dim":119,
+  "validation_fallback":false
+}
