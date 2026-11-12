@@ -215,6 +215,7 @@ def fit_single(spec, paired_seed, target, folder, cfg, status_path):
     elements = sum(p.numel() for p in model.embedding_network.parameters())
     total = sum(p.numel() for p in parameters)
     result = dict(target=target, variant='single_task', seed=model_seed, model_seed=model_seed,
+                  cost_measurement_source=cfg.get('cost_measurement_source','current-ST-serial'),
                   paired_seed=paired_seed, protocol=protocol, history=history,
                   epochs=len(history), selected_epoch=max(history, key=lambda r: r['val_auc'])['epoch'],
                   stop_reason='patience' if stale >= settings['patience'] else 'budget',

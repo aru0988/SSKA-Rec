@@ -1,5 +1,5 @@
 {
-  "version": "all-target-single-task-normalized-l2-v1-20261112",
+  "version": "all-target-single-task-parallel-census-v2-20261112",
   "expected_results": 55,
   "order": [
     "census",
@@ -51,7 +51,8 @@
       ],
       "embedding_l2": 0.006,
       "dnn_l2": 3e-05,
-      "dropout": null
+      "dropout": null,
+      "cost_measurement_source": "current-ST-concurrent-with-primary"
     },
     "kuairand": {
       "initial": [
@@ -182,5 +183,8 @@
   "dnn_l2": 3e-05,
   "legacy_kuairand": "../kuairand-st-20261031-v2",
   "comparison_root": "../tri-three-datasets-20261112/outputs/tri",
-  "wait_for_primary": true
+  "wait_for_primary": true,
+  "parallel_datasets": [
+    "census"
+  ]
 }

@@ -7,6 +7,12 @@ from sska_rec import core
 
 
 class STRunnerTests(unittest.TestCase):
+    def test_only_explicit_census_is_allowed_to_overlap_primary(self):
+        from sska_rec.st_runner import parallel_allowed
+        self.assertTrue(parallel_allowed({'parallel_datasets':['census']},'census'))
+        self.assertFalse(parallel_allowed({},'census'))
+        self.assertFalse(parallel_allowed({'parallel_datasets':['census']},'aliccp'))
+        with self.assertRaises(ValueError):parallel_allowed({'parallel_datasets':['kuairand']},'kuairand')
     def test_same_data_ignores_paths_but_rejects_changed_rows_or_labels(self):
         from sska_rec.st_runner import compare_data
         sig=dict(dataset='census',tasks=['a'],initial=['a'],features=['x'],vocab={},input_dim=1,representation_dim=4,widths=[1],inputs=[dict(path='/old/train.gz',sha256='raw',bytes=123)],splits={'train':dict(rows=8,rowid_sha256='ids',labels_sha256='labels',features_sha256='features',features_dtype='float32',labels_dtype='float32',rowid_dtype='int64')})

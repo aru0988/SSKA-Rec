@@ -26,6 +26,12 @@ def primary_ready(status,worker_alive):
     return status.get('state')=='complete' and status.get('completed')==125 and not status.get('pid') and not worker_alive
 
 
+def parallel_allowed(cfg,dataset):
+    allowed=cfg.get('parallel_datasets',[])
+    if set(allowed)-{'census'}:raise ValueError('Only Census ST has parallel resource admission')
+    return dataset in allowed
+
+
 def validate_config(cfg):
     expected={'census':['income','marital','education','sex'],'aliccp':['CTR','CVR','BSI'],'kuairand':['click','like','follow','forward']}
     if set(cfg['datasets'])!=set(expected) or set(cfg['order'])!=set(expected) or len(cfg['order'])!=3:raise ValueError('ST dataset matrix mismatch')
@@ -114,22 +120,25 @@ def main(argv=None):
         path=a.output/'identity.json'
         if path.exists() and json.loads(path.read_text())!=identity:raise ValueError('ST execution identity changed; select new version')
         core.dump(path,identity)
-        if cfg.get('wait_for_primary',True):
-            while True:
-                wait_primary(a.comparison_root,a.output)
-                try:
-                    primary_guard.enter_context(primary_lock(a.comparison_root))
-                    break
-                except OSError:time.sleep(1)
         core.DEVICE=torch.device(a.device)
         if core.DEVICE.type=='cuda' and not torch.cuda.is_available():raise RuntimeError('CUDA unavailable')
         torch.set_num_threads(4)
         from .tri_data import build_spec
         from .st_fit import fit_single,build_single
         from .st_reuse import reuse_single
+        primary_held=False
         try:
             for dataset in cfg['order']:
                 dc=cfg['datasets'][dataset]
+                overlap=parallel_allowed(cfg,dataset)
+                if not overlap and cfg.get('wait_for_primary',True) and not primary_held:
+                    while True:
+                        wait_primary(a.comparison_root,a.output)
+                        try:
+                            primary_guard.enter_context(primary_lock(a.comparison_root));primary_held=True
+                            break
+                        except OSError:time.sleep(1)
+                torch.set_num_threads(2 if overlap else 4)
                 core.dump(status,dict(state='running',pid=os.getpid(),dataset=dataset,stage='data_admission',updated_at=_utc()))
                 spec=build_spec(dataset,a.dataset_root,a.cache_root,a.output/dataset/'data',dc)
                 primary_data=a.comparison_root/dataset/'data/data-signature.json'
@@ -137,6 +146,10 @@ def main(argv=None):
                 core.dump(a.output/dataset/'comparison-receipt.json',dict(primary_data=str(primary_data.resolve()),primary_data_sha256=core.file_hash(primary_data),primary_identity_sha256=core.file_hash(a.comparison_root/'identity.json'),verified_at=_utc()))
                 for seed in dc['seeds']:
                     for target in dc['st_targets']:
+                        if overlap and core.DEVICE.type=='cuda':
+                            while torch.cuda.mem_get_info(core.DEVICE)[0]<2048*1024**2:
+                                core.dump(status,dict(state='queued',pid=os.getpid(),stage='waiting_for_gpu_headroom',dataset=dataset,updated_at=_utc()))
+                                time.sleep(15)
                         core.dump(status,dict(state='running',pid=os.getpid(),dataset=dataset,seed=seed,target=target,stage='single_task',updated_at=_utc()))
                         folder=a.output/dataset/str(seed)/target
                         reused=False
