@@ -1,0 +1,186 @@
+{
+  "version": "all-target-single-task-normalized-l2-v1-20261112",
+  "expected_results": 55,
+  "order": [
+    "census",
+    "kuairand",
+    "aliccp"
+  ],
+  "datasets": {
+    "census": {
+      "base_epochs": 30,
+      "ssl_epochs": 30,
+      "access_epochs": 30,
+      "epochs": 30,
+      "patience": 5,
+      "reg_dnn": 3e-05,
+      "seeds": [
+        1685480945,
+        1685463909,
+        1685477428,
+        1685459668,
+        1685496394
+      ],
+      "initial": [
+        "income",
+        "marital"
+      ],
+      "targets": [
+        "education",
+        "sex"
+      ],
+      "split_seed": 20260929,
+      "sizes": {
+        "train": 199523,
+        "val": 49881,
+        "test": 49881
+      },
+      "learning_rate": 0.001,
+      "batch_size": 256,
+      "rdim": 128,
+      "input_dim": 119,
+      "expected_inputs_sha256": {
+        "train.gz": "e2f2d57925a8020d23fcd05802284b3bc1d91fcdd451f1eaaefd683e76d1b2dc",
+        "test.gz": "8de690375028ac531de37fcbb117bd6527c5f3542d3bfead8975226e45100cec"
+      },
+      "st_targets": [
+        "income",
+        "marital",
+        "education",
+        "sex"
+      ],
+      "embedding_l2": 0.006,
+      "dnn_l2": 3e-05,
+      "dropout": null
+    },
+    "kuairand": {
+      "initial": [
+        "click",
+        "like"
+      ],
+      "log_files": [
+        "log_standard_4_08_to_4_21_pure.csv",
+        "log_standard_4_22_to_5_08_pure.csv",
+        "log_random_4_22_to_5_08_pure.csv"
+      ],
+      "categorical_features": [
+        "user_id",
+        "video_id",
+        "tab",
+        "hour"
+      ],
+      "numeric_features": [
+        "duration_ms"
+      ],
+      "split_fractions": [
+        0.7,
+        0.15,
+        0.15
+      ],
+      "min_positive_per_split": 20,
+      "expected_inputs_sha256": {
+        "log_standard_4_08_to_4_21_pure.csv": "5bb6eb0b3d9f47e5436cb5dc82ee1899b845ebf9750a5560b801e929e18bd41c",
+        "log_standard_4_22_to_5_08_pure.csv": "429e3b948828942e572f2c3a5be5a25799ffe75591d22d18cf417b9b534d31fd",
+        "log_random_4_22_to_5_08_pure.csv": "60b80994da969cd53da4d50c37ba3dafd6fb185df804c92c8410df34845a9d2c"
+      },
+      "base_epochs": 30,
+      "ssl_epochs": 30,
+      "epochs": 30,
+      "patience": 5,
+      "learning_rate": 0.001,
+      "batch_size": 512,
+      "embedding_size": 4,
+      "hidden": [
+        256,
+        128
+      ],
+      "tower": [
+        64,
+        32
+      ],
+      "rdim": 128,
+      "env_coe": 0.1,
+      "access_epochs": 30,
+      "reg_dnn": 3e-05,
+      "seeds": [
+        1685480945,
+        1685463909,
+        1685477428,
+        1685459668,
+        1685496394
+      ],
+      "targets": [
+        "follow",
+        "forward"
+      ],
+      "head_seed_offset": 4,
+      "legacy_preprocessing_source": "../continual-20261030/paper_continual_20261030/data.py",
+      "st_targets": [
+        "click",
+        "like",
+        "follow",
+        "forward"
+      ],
+      "embedding_l2": 0.006,
+      "dnn_l2": 3e-05,
+      "dropout": null
+    },
+    "aliccp": {
+      "base_epochs": 30,
+      "ssl_epochs": 30,
+      "access_epochs": 30,
+      "epochs": 30,
+      "patience": 5,
+      "reg_dnn": 3e-05,
+      "seeds": [
+        1688723512,
+        1688723740,
+        1688738016,
+        1688749593,
+        1688762746
+      ],
+      "initial": [
+        "CTR",
+        "CVR"
+      ],
+      "targets": [
+        "BSI"
+      ],
+      "learning_rate": 0.0001,
+      "batch_size": 2000,
+      "rdim": 64,
+      "sizes": {
+        "train": 10000000,
+        "val": 1000000,
+        "test": 10000000
+      },
+      "excluded_features": [
+        "101",
+        "301"
+      ],
+      "expected_inputs_sha256": {
+        "ctr_cvr.train": "707d8d264d2e46fe4194419dfd9cb3bad09b5ade1a05e9a402e8a3273332e216",
+        "ctr_cvr.dev": "d2df3dc96dca7b6cc1e35284ee22015cb0265e1e4ac85ae8654eb63cde6dc727",
+        "ctr_cvr.test": "11f997fc9856f3392f0fe21ebf4119fc7c65e9ac09023f440a9ce1054b679633"
+      },
+      "st_targets": [
+        "CTR",
+        "CVR",
+        "BSI"
+      ],
+      "embedding_l2": 0.006,
+      "dnn_l2": 3e-05,
+      "dropout": [
+        0.1,
+        0.3
+      ]
+    }
+  },
+  "epochs": 30,
+  "patience": 5,
+  "embedding_l2": 0.006,
+  "dnn_l2": 3e-05,
+  "legacy_kuairand": "../kuairand-st-20261031-v2",
+  "comparison_root": "../tri-three-datasets-20261112/outputs/tri",
+  "wait_for_primary": true
+}
