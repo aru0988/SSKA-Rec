@@ -1,0 +1,199 @@
+{
+  "version": "kuairand-pure-exposures-v2-epoch-days",
+  "preproc_hash": "594d985d9a87e09b9bb2f1756f2cadd48228f228da77455009e27097e8ce1596",
+  "source_sha256": "40f953f81b688194287e1008fb78b180e3be4a714c3f8fefc3d1cb51aa8c7245",
+  "time_definition": {
+    "source": "time_ms",
+    "unit": "Unix epoch milliseconds",
+    "timezone": "Asia/Shanghai",
+    "split_key": "complete local calendar day",
+    "raw_date_role": "audit_only",
+    "hour_feature": "original hourmin // 100 logging bucket"
+  },
+  "config": {
+    "log_files": [
+      "log_standard_4_08_to_4_21_pure.csv",
+      "log_standard_4_22_to_5_08_pure.csv",
+      "log_random_4_22_to_5_08_pure.csv"
+    ],
+    "categorical_features": [
+      "user_id",
+      "video_id",
+      "tab",
+      "hour"
+    ],
+    "numeric_features": [
+      "duration_ms"
+    ],
+    "split_fractions": [
+      0.7,
+      0.15,
+      0.15
+    ],
+    "min_positive_per_split": 20,
+    "chunksize": 100000
+  },
+  "inputs": [
+    {
+      "path": "/home/u2025140625/shared/dataset/KuaiRand-Pure/data/log_standard_4_08_to_4_21_pure.csv",
+      "sha256": "5bb6eb0b3d9f47e5436cb5dc82ee1899b845ebf9750a5560b801e929e18bd41c",
+      "bytes": 83961282,
+      "mtime_ns": 1654608591000000000,
+      "logging_policy": "standard"
+    },
+    {
+      "path": "/home/u2025140625/shared/dataset/KuaiRand-Pure/data/log_standard_4_22_to_5_08_pure.csv",
+      "sha256": "429e3b948828942e572f2c3a5be5a25799ffe75591d22d18cf417b9b534d31fd",
+      "bytes": 21765075,
+      "mtime_ns": 1654609855000000000,
+      "logging_policy": "standard"
+    },
+    {
+      "path": "/home/u2025140625/shared/dataset/KuaiRand-Pure/data/log_random_4_22_to_5_08_pure.csv",
+      "sha256": "60b80994da969cd53da4d50c37ba3dafd6fb185df804c92c8410df34845a9d2c",
+      "bytes": 87086116,
+      "mtime_ns": 1654599915000000000,
+      "logging_policy": "random"
+    }
+  ],
+  "splits": {
+    "train": {
+      "rows": 1620437,
+      "fraction_of_exposures": 0.6178582268133062,
+      "dates": [
+        "2022-04-09",
+        "2022-04-10",
+        "2022-04-11",
+        "2022-04-12",
+        "2022-04-13",
+        "2022-04-14",
+        "2022-04-15",
+        "2022-04-16",
+        "2022-04-17",
+        "2022-04-18",
+        "2022-04-19",
+        "2022-04-20",
+        "2022-04-21",
+        "2022-04-22",
+        "2022-04-23",
+        "2022-04-24",
+        "2022-04-25",
+        "2022-04-26",
+        "2022-04-27",
+        "2022-04-28",
+        "2022-04-29"
+      ],
+      "date_min": "2022-04-09",
+      "date_max": "2022-04-29",
+      "time_ms_min": 1649475963278,
+      "time_ms_max": 1651247997696,
+      "labels": {
+        "click": {
+          "positive": 647804,
+          "negative": 972633
+        },
+        "like": {
+          "positive": 25412,
+          "negative": 1595025
+        },
+        "follow": {
+          "positive": 1430,
+          "negative": 1619007
+        },
+        "forward": {
+          "positive": 1360,
+          "negative": 1619077
+        }
+      },
+      "x": "train-x.npy",
+      "y": "train-y.npy",
+      "rowid": "train-rowid.npy",
+      "sha256": {
+        "x": "465f94eada4a9373a505edc39ed7805c7083a017f64defbe85b59f5ddc627162",
+        "y": "5ac158bf76fdf65799b8b252b29ec8c19a334c400f97306f51266f7c524b91cf",
+        "rowid": "c8f236b62b87f77003bc65860187628652a0b374506f58ee69ef0b9d7d7f2e97"
+      }
+    },
+    "val": {
+      "rows": 401130,
+      "fraction_of_exposures": 0.15294730404305845,
+      "dates": [
+        "2022-04-30",
+        "2022-05-01",
+        "2022-05-02",
+        "2022-05-03"
+      ],
+      "date_min": "2022-04-30",
+      "date_max": "2022-05-03",
+      "time_ms_min": 1651248001222,
+      "time_ms_max": 1651593599455,
+      "labels": {
+        "click": {
+          "positive": 93146,
+          "negative": 307984
+        },
+        "like": {
+          "positive": 3068,
+          "negative": 398062
+        },
+        "follow": {
+          "positive": 177,
+          "negative": 400953
+        },
+        "forward": {
+          "positive": 179,
+          "negative": 400951
+        }
+      },
+      "x": "val-x.npy",
+      "y": "val-y.npy",
+      "rowid": "val-rowid.npy",
+      "sha256": {
+        "x": "4ee6847720b1bd913a65744883d814cb5079610da51d71125a2b47094ee535cd",
+        "y": "f45265e80f0199ee92dbd83ecb8e48ef602167a61d395d9df1d79bf9dc433709",
+        "rowid": "e54bb4c75e697819422f43b5a3d2d6fd39e5713e45f7701681db58ebdb5206f3"
+      }
+    },
+    "test": {
+      "rows": 601101,
+      "fraction_of_exposures": 0.22919446914363542,
+      "dates": [
+        "2022-05-04",
+        "2022-05-05",
+        "2022-05-06",
+        "2022-05-07",
+        "2022-05-08"
+      ],
+      "date_min": "2022-05-04",
+      "date_max": "2022-05-08",
+      "time_ms_min": 1651593601225,
+      "time_ms_max": 1652025130564,
+      "labels": {
+        "click": {
+          "positive": 128326,
+          "negative": 472775
+        },
+        "like": {
+          "positive": 3757,
+          "negative": 597344
+        },
+        "follow": {
+          "positive": 246,
+          "negative": 600855
+        },
+        "forward": {
+          "positive": 245,
+          "negative": 600856
+        }
+      },
+      "x": "test-x.npy",
+      "y": "test-y.npy",
+      "rowid": "test-rowid.npy",
+      "sha256": {
+        "x": "a3ca8c8dc1d432a86e4773425d33d803c9918934cb33f43309b610f640e0c6e4",
+        "y": "dc8a1cb08cdd82f87202137a54462ce91562537c98a785db14d4db5d84fab0be",
+        "rowid": "78ddce7f081ab0282dd15204cf1d936b32f424b1b1f358f53c99775e7ad20cda"
+      }
+    }
+  }
+}

@@ -22,6 +22,7 @@ def main():
     p.add_argument('--comparison-root',type=Path,required=True)
     p.add_argument('--completed-st-root',type=Path,required=True)
     p.add_argument('--legacy-kuairand',type=Path,required=True)
+    p.add_argument('--resume-st-root',type=Path)
     p.add_argument('--output',type=Path,default=Path('outputs/st'))
     a=p.parse_args();cfg=json.loads(Path('configs/st_three_datasets.json').read_text());validate_config(cfg)
     cfg=dict(cfg,execution_mode='remaining-ST-parallel-to-primary')
@@ -61,6 +62,16 @@ def main():
                             time.sleep(15)
                         core.dump(status,dict(state='running',pid=os.getpid(),dataset=dataset,seed=seed,target=target,stage='single_task',updated_at=_utc()))
                         folder=out/dataset/str(seed)/target;reused=False
+                        if a.resume_st_root:
+                            prior=a.resume_st_root/dataset/str(seed)/target
+                            if (prior/'COMMITTED.json').exists() and not folder.exists():
+                                previous=json.loads((a.resume_st_root/'identity.json').read_text())
+                                for name in ['st_fit.py','backbone.py','core.py','training.py','tri_data.py','data.py','vocabulary.py']:
+                                    if previous['source'][name]!=core.file_hash(Path(__file__).with_name(name)):raise ValueError(f'Completed ST source changed: {name}')
+                                compare_data(spec['data_signature'],json.loads((a.resume_st_root/dataset/'data/data-signature.json').read_text()))
+                                _committed(core,prior)
+                                folder.parent.mkdir(parents=True,exist_ok=True)
+                                folder.symlink_to(prior.resolve(),target_is_directory=True)
                         if dataset=='kuairand' and target in ['follow','forward']:
                             model=build_single(spec,seed+spec['tasks'].index(target)+2,dc)
                             reused=reuse_single(spec,seed,target,model,folder,a.legacy_kuairand,dc)

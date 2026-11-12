@@ -54,6 +54,23 @@ def _source_identity(spec, seed, legacy, cfg):
         raise ValueError('Historical ST model source semantics differ')
     manifest_path = Path(spec['preprocessing_manifest']).resolve()
     manifest = _read(manifest_path)
+    manifest_equivalence = None
+    if manifest['preproc_hash'] != identity['data']:
+        snapshot = Path(cfg.get('legacy_manifest_snapshot', 'experiments/st-three-datasets/legacy-kuairand-manifest.json'))
+        original = _read(snapshot)
+        if original['preproc_hash'] != identity['data']:
+            raise ValueError('Historical manifest snapshot identity mismatch')
+        fingerprint={k:original[k] for k in ['version','source_sha256','time_definition','config']}
+        fingerprint['inputs']=[{k:x[k] for k in ['path','sha256']} for x in original['inputs']]
+        if _object_hash(fingerprint)!=identity['data']:
+            raise ValueError('Historical snapshot fingerprint mismatch')
+        for key in ['version', 'time_definition', 'config', 'features', 'splits']:
+            if original[key] != manifest[key]:
+                raise ValueError(f'Historical/current cache content differs: {key}')
+        if [(x['path'],x['sha256']) for x in original['inputs']] != [(x['path'],x['sha256']) for x in manifest['inputs']]:
+            raise ValueError('Historical/current raw inputs differ')
+        manifest_equivalence = dict(snapshot=str(snapshot.resolve()), snapshot_sha256=core.file_hash(snapshot), original_preproc_hash=original['preproc_hash'], current_preproc_hash=manifest['preproc_hash'], identical_sections=['version','time_definition','config','features','splits','inputs.path_sha256'])
+        manifest = original
     expected = dict(version='kuairand-st-normalized-l2-v2', source=_object_hash(lock),
                     execution=EXECUTION_SHA256, data=manifest['preproc_hash'], seeds=config['seeds'],
                     embedding_l2='0.006/(2*N_E)*sum(E^2)', epochs=30, patience=5,
@@ -94,7 +111,8 @@ def _source_identity(spec, seed, legacy, cfg):
                 source_root=str(source), semantic_classes=classes,
                 model_source_sha256=lock['files'][_MODEL_SOURCE],
                 current_backbone_sha256=core.file_hash(Path(__file__).with_name('backbone.py')),
-                preprocessing_manifest_sha256=core.file_hash(manifest_path), preprocessing_arrays=arrays)
+                preprocessing_manifest_sha256=core.file_hash(manifest_path), preprocessing_arrays=arrays,
+                manifest_equivalence=manifest_equivalence)
 
 
 def _validate_history(old):
