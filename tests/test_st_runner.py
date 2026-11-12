@@ -7,6 +7,11 @@ from sska_rec import core
 
 
 class STRunnerTests(unittest.TestCase):
+    def test_cuda_device_without_index_is_normalized_before_memory_queries(self):
+        from sska_rec.st_runner import selected_device
+        self.assertEqual(selected_device('cuda').index,0)
+        self.assertEqual(selected_device('cuda:1').index,1)
+        self.assertEqual(selected_device('cpu').type,'cpu')
     def test_only_explicit_census_is_allowed_to_overlap_primary(self):
         from sska_rec.st_runner import parallel_allowed
         self.assertTrue(parallel_allowed({'parallel_datasets':['census']},'census'))

@@ -11,6 +11,10 @@ from .locking import ExclusiveLock
 from .training import _utc
 
 
+def selected_device(name):
+    return torch.device('cuda:0' if name=='cuda' else name)
+
+
 def compare_data(actual,reference):
     for key in ['dataset','tasks','initial','features','vocab','input_dim','representation_dim','widths']:
         if actual.get(key)!=reference.get(key):raise ValueError(f'Primary data mismatch: {key}')
@@ -120,7 +124,7 @@ def main(argv=None):
         path=a.output/'identity.json'
         if path.exists() and json.loads(path.read_text())!=identity:raise ValueError('ST execution identity changed; select new version')
         core.dump(path,identity)
-        core.DEVICE=torch.device(a.device)
+        core.DEVICE=selected_device(a.device)
         if core.DEVICE.type=='cuda' and not torch.cuda.is_available():raise RuntimeError('CUDA unavailable')
         torch.set_num_threads(4)
         from .tri_data import build_spec
