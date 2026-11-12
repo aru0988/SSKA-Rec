@@ -179,6 +179,64 @@ def test_aliccp_signature_requires_user_groups():
         tri_data.dataset_signature(spec, [])
 
 
+def _legacy_cache(tmp_path, semantic_change=False):
+    import pandas as pd
+    from sska_rec import data
+    root = tmp_path / 'dataset'
+    raw = root / 'KuaiRand-Pure' / 'data'
+    raw.mkdir(parents=True)
+    records = []
+    for day in range(1, 11):
+        for j in range(2):
+            records.append(dict(date=f'202204{day:02}', time_ms=pd.Timestamp(f'2022-04-{day:02} 12:00', tz='Asia/Shanghai').value // 1000000 + j,
+                                user_id=j, video_id=j, tab=j, hourmin=1200,
+                                duration_ms=day, **{f'is_{k}': j for k in data.LABELS}))
+    pd.DataFrame(records).to_csv(raw / 'log.csv', index=False)
+    prep_cfg = dict(log_files=['log.csv'], min_positive_per_split=1, chunksize=7)
+    cache = tmp_path / 'cache'
+    path = data.prepare_kuairand(raw, cache / 'kuairand', prep_cfg)
+    legacy = tmp_path / 'paper_continual_20261030' / 'data.py'
+    legacy.parent.mkdir()
+    text = Path(data.__file__).read_text()
+    text = text.replace('math.floor(len(days) * 0.7)', 'math.floor(len(days) * 0.6)') if semantic_change else text
+    legacy.write_text(text + '\n# Legacy source packaging comment\n')
+    legacy_sha = core.file_hash(legacy)
+    core.dump(legacy.parent / 'source-lock.json', {'files': {'paper_continual_20261030/data.py': legacy_sha}})
+    m = json.loads(path.read_text())
+    m['source_sha256'] = legacy_sha
+    fingerprint = {k: m[k] for k in ['version', 'source_sha256', 'time_definition', 'config']}
+    fingerprint['inputs'] = [{k: v[k] for k in ['path', 'sha256']} for v in m['inputs']]
+    m['preproc_hash'] = hashlib.sha256(json.dumps(fingerprint, sort_keys=True).encode()).hexdigest()
+    core.dump(path, m)
+    cfg = dict(_cfg(), **prep_cfg, batch_size=512, legacy_preprocessing_source=str(legacy))
+    return root, cache, path, cfg
+
+
+def test_reuses_byte_different_semantically_identical_locked_legacy_cache(tmp_path, monkeypatch):
+    from sska_rec import tri_data
+    root, cache, manifest_path, cfg = _legacy_cache(tmp_path)
+    before = {p.name: core.file_hash(p) for p in manifest_path.parent.iterdir() if p.is_file()}
+    monkeypatch.setattr(tri_data, 'prepare_kuairand', lambda *a: (_ for _ in ()).throw(AssertionError('Must not mutate shared legacy cache')))
+    spec = tri_data.build_spec('kuairand', root, cache, tmp_path / 'meta', cfg)
+    proof = spec['data_signature']['preprocessing']['source_compatibility']
+    assert proof['legacy_sha256'] != proof['current_sha256']
+    assert proof['semantic_equivalence'] is True
+    assert {p.name: core.file_hash(p) for p in manifest_path.parent.iterdir() if p.is_file()} == before
+    for rows in spec['sets'].values():
+        for a in (rows.x, rows.y, rows.row_ids):
+            a._mmap.close()
+
+
+def test_rejects_semantic_change_in_locked_legacy_cache_without_mutation(tmp_path, monkeypatch):
+    from sska_rec import tri_data
+    root, cache, manifest_path, cfg = _legacy_cache(tmp_path, semantic_change=True)
+    before = {p.name: core.file_hash(p) for p in manifest_path.parent.iterdir() if p.is_file()}
+    monkeypatch.setattr(tri_data, 'prepare_kuairand', lambda *a: (_ for _ in ()).throw(AssertionError('Must not mutate shared legacy cache')))
+    with unittest.TestCase().assertRaisesRegex(ValueError, '_date_partition'):
+        tri_data.build_spec('kuairand', root, cache, tmp_path / 'meta', cfg)
+    assert {p.name: core.file_hash(p) for p in manifest_path.parent.iterdir() if p.is_file()} == before
+
+
 class _MonkeyPatch:
     def __init__(self):
         self.patches = []

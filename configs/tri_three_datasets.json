@@ -114,7 +114,8 @@
         "follow",
         "forward"
       ],
-      "head_seed_offset": 4
+      "head_seed_offset": 4,
+      "legacy_preprocessing_source": "../continual-20261030/paper_continual_20261030/data.py"
     },
     "aliccp": {
       "base_epochs": 30,

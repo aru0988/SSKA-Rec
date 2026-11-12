@@ -4,6 +4,7 @@ Raw datasets are opened in place. Ali-CCP and KuaiRand reuse encoded caches;
 Census keeps the original complete split and records its deterministic indices.
 """
 
+import ast
 import hashlib
 import json
 from pathlib import Path
@@ -142,14 +143,102 @@ def _publish(metadata_dir, signature, indices=None):
     return path
 
 
+def _legacy_manifest(manifest_path, dataset_root, cfg, preparation):
+    """Admit a locked, semantically identical preprocessing cache read-only."""
+    m = json.loads(manifest_path.read_text(encoding='utf-8'))
+    source = Path(cfg['legacy_preprocessing_source']).expanduser().resolve()
+    source_sha = core.file_hash(source)
+    lock_path = source.parent / 'source-lock.json'
+    lock = json.loads(lock_path.read_text(encoding='utf-8'))
+    lock_key = source.parent.name + '/' + source.name
+    if lock.get('files', {}).get(lock_key) != source_sha:
+        raise ValueError(f'Legacy preprocessing source-lock mismatch: {lock_key}')
+    if source_sha != m.get('source_sha256'):
+        raise ValueError('Legacy preprocessing source SHA256 differs from cached manifest')
+
+    class Semantic(ast.NodeTransformer):
+        def visit_Expr(self, node):
+            if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                return None
+            return self.generic_visit(node)
+
+    def nodes(path):
+        tree = Semantic().visit(ast.parse(Path(path).read_text(encoding='utf-8')))
+        result = {}
+        for i, node in enumerate(tree.body):
+            if isinstance(node, (ast.Import, ast.ImportFrom)):
+                continue
+            key = getattr(node, 'name', None)
+            if key is None and isinstance(node, ast.Assign):
+                key = 'assign:' + ','.join(ast.dump(t, include_attributes=False) for t in node.targets)
+            key = key or f'top-level:{i}'
+            result[key] = ast.dump(node, include_attributes=False)
+        return result
+
+    current_source = Path(preparation.__file__).resolve()
+    old_nodes, current_nodes = nodes(source), nodes(current_source)
+    differences = sorted(k for k in old_nodes.keys() | current_nodes.keys() if old_nodes.get(k) != current_nodes.get(k))
+    if differences:
+        raise ValueError(f'Legacy preprocessing semantic differences: {", ".join(differences)}')
+    keys = ('log_files', 'categorical_features', 'numeric_features', 'split_fractions',
+            'min_positive_per_split', 'chunksize')
+    settings = preparation._configuration({k: cfg[k] for k in keys if k in cfg})
+    if m.get('config') != settings or m.get('time_definition') != preparation.TIME_DEFINITION:
+        raise ValueError('Legacy preprocessing configuration/time definition mismatch')
+    if m.get('version') != 'kuairand-pure-exposures-v2-epoch-days':
+        raise ValueError('Legacy preprocessing version mismatch')
+    inputs = input_identity([dataset_root / 'KuaiRand-Pure' / 'data' / name for name in settings['log_files']])
+    original_inputs = m['inputs']
+    actual = [(Path(v['path']).name, v['sha256'], v['bytes']) for v in inputs]
+    original = [(Path(v['path']).name, v['sha256'], v['bytes']) for v in original_inputs]
+    if actual != original:
+        raise ValueError('Legacy preprocessing raw input identity mismatch')
+    _check_inputs(inputs, cfg)
+    fingerprint = {k: m[k] for k in ('version', 'source_sha256', 'time_definition', 'config')}
+    fingerprint['inputs'] = [{k: v[k] for k in ('path', 'sha256')} for v in original_inputs]
+    digest = hashlib.sha256(json.dumps(fingerprint, sort_keys=True).encode()).hexdigest()
+    if digest != m.get('preproc_hash'):
+        raise ValueError('Legacy preprocessing fingerprint mismatch')
+    array_hashes = {}
+    cache = manifest_path.parent.resolve()
+    for split in SPLITS:
+        info = m['splits'][split]
+        array_hashes[split] = {}
+        for kind in ('x', 'y', 'rowid'):
+            path = (cache / info[kind]).resolve()
+            if not path.is_relative_to(cache) or not path.is_file():
+                raise ValueError(f'Legacy preprocessing array outside cache or missing: {split}/{kind}')
+            digest = core.file_hash(path)
+            if digest != info['sha256'][kind]:
+                raise ValueError(f'Legacy preprocessing array SHA256 mismatch: {split}/{kind}')
+            array_hashes[split][kind] = digest
+    m['source_compatibility'] = dict(semantic_equivalence=True,
+        legacy_source=str(source), legacy_sha256=source_sha,
+        current_source=str(current_source), current_sha256=core.file_hash(current_source),
+        source_lock=str(lock_path), source_lock_sha256=core.file_hash(lock_path),
+        verified_nodes=sorted(current_nodes), verified_inputs=inputs,
+        verified_array_sha256=array_hashes, original_preproc_hash=m['preproc_hash'])
+    return m
+
+
 def _kuairand(dataset_root, cache_root, cfg):
     keys = ('log_files', 'categorical_features', 'numeric_features', 'split_fractions',
             'min_positive_per_split', 'chunksize')
-    manifest_path = prepare_kuairand(dataset_root / 'KuaiRand-Pure' / 'data',
-                                    cache_root / 'kuairand',
-                                    {k: cfg[k] for k in keys if k in cfg})
-    manifest_path = Path(manifest_path)
-    m = json.loads(manifest_path.read_text(encoding='utf-8'))
+    from . import data as preparation
+    manifest_path = cache_root / 'kuairand' / 'manifest.json'
+    m = None
+    if manifest_path.is_file():
+        existing = json.loads(manifest_path.read_text(encoding='utf-8'))
+        old_sha = existing.get('source_sha256')
+        if old_sha and old_sha != core.file_hash(preparation.__file__):
+            if not cfg.get('legacy_preprocessing_source'):
+                raise ValueError('Existing KuaiRand cache has a different source SHA256; legacy_preprocessing_source is required for read-only semantic admission')
+            m = _legacy_manifest(manifest_path, dataset_root, cfg, preparation)
+    if m is None:
+        manifest_path = Path(prepare_kuairand(dataset_root / 'KuaiRand-Pure' / 'data',
+                                            cache_root / 'kuairand',
+                                            {k: cfg[k] for k in keys if k in cfg}))
+        m = json.loads(manifest_path.read_text(encoding='utf-8'))
     if m['version'] != 'kuairand-pure-exposures-v2-epoch-days':
         raise ValueError('KuaiRand preprocessing version mismatch')
     if m['features']['fit_split'] != 'train':
@@ -248,6 +337,8 @@ def build_spec(dataset, dataset_root, cache_root, metadata_dir, cfg):
                          schema_source='existing encoded Ali-CCP vocabulary; no refitting')
     else:
         signature['preprocessing'] = {k: preprocessing[k] for k in ('version', 'preproc_hash', 'features', 'splits')}
+        if 'source_compatibility' in preprocessing:
+            signature['preprocessing']['source_compatibility'] = preprocessing['source_compatibility']
     path = _publish(metadata_dir, signature, indices)
     spec.update(data_signature=signature, metadata_path=str(path))
     return spec
