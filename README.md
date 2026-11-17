@@ -54,6 +54,7 @@ Each seed shares one frozen backbone and one frozen SSL source. New tasks receiv
 - [Census二阶段融合与U更新范围](experiments/u-stage2-census/README.md)
 - [Census轻量U微调：BitFit、SSF和Adapter](experiments/u-peft-census/README.md)
 - [方案1：补充U与三路路由；方案2：原任务冻结U读出（并行运行）](experiments/schemes-20261116/README.md)
+- [论文表4–6：读取对照、随机U＋LoRA与参数/FLOPs统计](experiments/paper-controls-20261117/README.md)
 
 ## Source
 
