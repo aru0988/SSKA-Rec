@@ -20,7 +20,8 @@ from .base_training import PairedTrainManager
 
 DATA = Path("dataset")
 CACHE = Path("cache/aliccp")
-DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+DEVICE = torch.device(os.environ["SSKA_DEVICE"] if "SSKA_DEVICE" in os.environ
+                      else ("cuda:0" if torch.cuda.is_available() else "cpu"))
 
 
 def make_split(n_test: int, split_seed: int) -> tuple[np.ndarray, np.ndarray]:

@@ -1,0 +1,55 @@
+{
+  "mpt_rec": {
+    "source_path": "D:\\MPT-Rec-three_task\\MPT-Rec\\multitaskrec\\model.py",
+    "repository": "https://github.com/aru0988/three_task.git",
+    "commit": "b990e11154dfb21540fc3cece7333fedbf1a2abc",
+    "source_sha256": "b46cbf5122b4737edeb6daa21c86c4b6cf9a4e78c55c2a71d14ccd229b1f061b",
+    "extracted_classes": [
+      "CGC",
+      "EmbeddingNetwork",
+      "MLP",
+      "MMOE",
+      "PLE",
+      "SharedBottom"
+    ],
+    "license": "No LICENSE file found in the existing local source repository; existing project code reused under user authorization.",
+    "adaptations": [
+      "Extract only six baseline classes and torch imports.",
+      "Replace squeeze() with squeeze(-1) to preserve batch dimension for singleton batches; non-singleton numerical equivalence is tested."
+    ]
+  },
+  "adatt": {
+    "repository": "https://github.com/facebookresearch/AdaTT",
+    "commit": "0efdd821179029bbd599043e353841c1afd3fcfa",
+    "retrieved_date": "2026-11-18",
+    "source_url": "https://raw.githubusercontent.com/facebookresearch/AdaTT/0efdd821179029bbd599043e353841c1afd3fcfa/mtl_lib.py",
+    "source_file": "adatt_mtl_lib.py",
+    "source_sha256": "113838ddb69a72201116ed0493eb256e961a8a2da027d393b995be992be347ae",
+    "license_file": "LICENSE.AdaTT",
+    "license_sha256": "155419f3d7fed7028e2302e296c7b35e704e305d87e3c0fc5fb02a115c03e0b4",
+    "license": "MIT",
+    "adaptations": [
+      "Upstream mtl_lib.py preserved unchanged.",
+      "AdaTT-sp extraction: two tasks, one native expert per task per layer, two layers with single-layer expert widths spec.hidden, ReLU and native-expert residual enabled.",
+      "Input embeddings are expanded to two task inputs, following upstream CentralTaskArch.forward.",
+      "Task sigmoid towers reuse existing MPT-Rec MLP; no extraction dropout."
+    ]
+  },
+  "regularization": {
+    "embedding": ".006 / (sum(vocab sizes) * embedding size), multiplied by half squared embedding weights",
+    "dnn": "3e-5 multiplied by half squared expert and tower Linear weights",
+    "excluded": "Linear biases and gating parameters, following existing MPT-Rec MMOE/CGC conventions"
+  },
+  "architecture": {
+    "sharedbottom": "Existing SharedBottom: spec.hidden backbone, spec.tower towers",
+    "mmoe": "Existing MMOE: three experts, spec.hidden experts, spec.tower towers",
+    "ple": "Existing CGC/PLE equations assembled with one expert per task and one shared expert; hidden[0] and hidden[1] widths across two levels; spec.tower towers",
+    "aliccp_dropout": "Existing [0.1, 0.3] SharedBottom/MMOE hidden dropout; PLE levels use 0.1 and 0.3; no tower dropout"
+  },
+  "bundled_file_sha256": {
+    "mpt_baselines_original.py": "08c0027fb5c689137ab76030382da13d514ae8f5c97deae5792d1af1c8737821",
+    "mpt_baselines.py": "0e49f520abb08fe1524e08684ef085a5af495883e10c31bc062f73fd2b1cb5bd",
+    "adatt_mtl_lib.py": "113838ddb69a72201116ed0493eb256e961a8a2da027d393b995be992be347ae",
+    "LICENSE.AdaTT": "155419f3d7fed7028e2302e296c7b35e704e305d87e3c0fc5fb02a115c03e0b4"
+  }
+}
