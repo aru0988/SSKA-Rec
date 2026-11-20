@@ -1,0 +1,89 @@
+{
+  "variants": [
+    "mpt",
+    "tri_frozen",
+    "random_lora",
+    "tri_lora"
+  ],
+  "datasets": {
+    "kuairand": {
+      "initial": [
+        "click",
+        "like"
+      ],
+      "log_files": [
+        "log_standard_4_08_to_4_21_pure.csv",
+        "log_standard_4_22_to_5_08_pure.csv",
+        "log_random_4_22_to_5_08_pure.csv"
+      ],
+      "categorical_features": [
+        "user_id",
+        "video_id",
+        "tab",
+        "hour"
+      ],
+      "numeric_features": [
+        "duration_ms"
+      ],
+      "split_fractions": [
+        0.7,
+        0.15,
+        0.15
+      ],
+      "min_positive_per_split": 20,
+      "expected_inputs_sha256": {
+        "log_standard_4_08_to_4_21_pure.csv": "5bb6eb0b3d9f47e5436cb5dc82ee1899b845ebf9750a5560b801e929e18bd41c",
+        "log_standard_4_22_to_5_08_pure.csv": "429e3b948828942e572f2c3a5be5a25799ffe75591d22d18cf417b9b534d31fd",
+        "log_random_4_22_to_5_08_pure.csv": "60b80994da969cd53da4d50c37ba3dafd6fb185df804c92c8410df34845a9d2c"
+      },
+      "base_epochs": 30,
+      "ssl_epochs": 30,
+      "epochs": 30,
+      "patience": 5,
+      "learning_rate": 0.001,
+      "batch_size": 512,
+      "embedding_size": 4,
+      "hidden": [
+        256,
+        128
+      ],
+      "tower": [
+        64,
+        32
+      ],
+      "rdim": 128,
+      "env_coe": 0.1,
+      "access_epochs": 30,
+      "reg_dnn": 3E-05,
+      "seeds": [
+        1685480945,
+        1685463909,
+        1685477428,
+        1685459668,
+        1685496394
+      ],
+      "targets": [
+        "follow",
+        "forward"
+      ],
+      "head_seed_offset": 4,
+      "legacy_preprocessing_source": "../continual-20261030/paper_continual_20261030/data.py",
+      "embedding_l2": 0.006,
+      "embedding_l2_normalization": "parameter_mean"
+    }
+  },
+  "expected_queue_jobs": 65,
+  "version": "kuairand-normalized-l2-headonly-v1-20261120",
+  "expected_training_units": 70,
+  "execution": {
+    "threads_per_worker": 2,
+    "workers": 4
+  },
+  "order": [
+    "kuairand"
+  ],
+  "readouts": [
+    "conditional_readout",
+    "head_only"
+  ]
+}

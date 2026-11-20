@@ -30,12 +30,24 @@ def train_one(
     guard,
     status_path,
     paired_seed=None,
+    completion_metadata=None,
 ):
     folder = Path(folder)
+    completion_metadata = dict(completion_metadata or {})
+
+    def verify_completion_metadata(metrics):
+        if any(metrics.get(key) != value for key, value in completion_metadata.items()):
+            raise ValueError('Completed stage source provenance mismatch')
+        if 'contract' in completion_metadata:
+            path = folder/'contract.json'
+            if not path.is_file() or json.loads(path.read_text(encoding='utf8')) != completion_metadata['contract']:
+                raise ValueError('Completed stage source contract mismatch')
+
     guard()
     if (folder / "COMMITTED.json").exists():
         _committed(core, folder)
         prior = json.loads((folder / "metrics.json").read_text())
+        verify_completion_metadata(prior)
         assert (
             prior["target"] == target
             and prior["variant"] == variant
@@ -47,6 +59,7 @@ def train_one(
     if (folder / "metrics.json").exists():
         pending = json.loads((folder / "metrics.json").read_text())
         if pending.get("ready_for_commit"):
+            verify_completion_metadata(pending)
             assert (
                 pending["target"] == target
                 and pending["variant"] == variant
@@ -75,6 +88,8 @@ def train_one(
             _commit(core, folder)
             return pending
     _committed(core, folder)
+    if 'contract' in completion_metadata:
+        core.dump(folder/'contract.json', completion_metadata['contract'])
     idx = spec["tasks"].index(target)
     live = []
 
@@ -217,6 +232,7 @@ def train_one(
         paired_seed=paired_seed if paired_seed is not None else seed,
         ready_for_commit=True,
     )
+    result.update(completion_metadata)
     core.dump(folder / "metrics.json", result)
     _commit(core, folder)
     return result

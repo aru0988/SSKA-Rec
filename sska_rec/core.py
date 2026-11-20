@@ -301,6 +301,17 @@ def aliccp(initial, tiny=False, data_hashes=None):
 
 def build_base(spec):
     kw = {"dropout": [0.1, 0.3]} if spec["dataset"] == "aliccp" else {}
+    mode = spec.get("embedding_l2_normalization", "sum")
+    coefficient = 0.006
+    if mode == "parameter_mean":
+        if spec["dataset"] != "kuairand":
+            raise ValueError("Normalized source protocol is registered only for KuaiRand")
+        elements = sum(spec["vocab"].values()) * spec["embed"]
+        if elements <= 0 or spec.get("embedding_l2", .006) != .006:
+            raise ValueError("Invalid normalized embedding regularization")
+        coefficient /= elements
+    elif mode != "sum":
+        raise ValueError("Unknown embedding L2 normalization")
     return MPTRec(
         2,
         spec["vocab"],
@@ -308,7 +319,7 @@ def build_base(spec):
         spec["xdim"],
         spec["hidden"],
         spec["tower"],
-        reg_embedding=0.006,
+        reg_embedding=coefficient,
         reg_dnn=3e-5,
         device=DEVICE,
         **kw,
