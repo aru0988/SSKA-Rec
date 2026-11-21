@@ -1,0 +1,10 @@
+{
+  "version": "table2-two-task-v2-formal-l2-20261122",
+  "pilot_cfg_sha256": "2e7c0c13a2c383ea7f03cba03720358c802421326e8ed1a271dd5c950f27262d",
+  "pilot_decision_sha256": "0df4a66d4c1b937c6f5187b4425ba39e63227925ce0d960d7b18b811e3cae535",
+  "embedding_l2_modes": {
+    "census": "sum",
+    "aliccp": "sum",
+    "kuairand": "mean"
+  }
+}

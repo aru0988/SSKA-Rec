@@ -58,14 +58,14 @@ class AdaTTBaseline(nn.Module):
 
 
 def build_baseline(spec, model_seed, variant, cfg=None):
-    """Construct two joint initial-task heads with normalized embedding L2."""
+    """Construct two joint initial-task heads."""
     cfg = {} if cfg is None else cfg
     for key in ('reg_embedding', 'reg_dnn'):
         if key in cfg:
             raise ValueError(f'Unregistered baseline regularization option: {key}')
     core.seed_all(model_seed)
-    denominator = sum(spec['vocab'].values()) * spec['embed']
-    reg_embedding = float(cfg.get('embedding_l2', .006)) / denominator
+    reg_embedding = core.embedding_l2_coefficient(spec, float(cfg.get('embedding_l2', .006)),
+                                                  cfg.get('embedding_l2_mode', 'mean'))
     reg_dnn = float(cfg.get('dnn_l2', 3e-5))
     dropout = [.1, .3] if spec['dataset'] == 'aliccp' else None
     common = dict(num_tasks=2, feature_vocabulary=spec['vocab'],

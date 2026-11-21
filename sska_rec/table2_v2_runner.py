@@ -83,14 +83,21 @@ def make_jobs(cfg):
     return jobs
 
 
-def verify_gate(pilot_root, config_hash, signatures=None):
+def verify_gate(pilot_root, config_hash, signatures=None, *, review_hash=None):
     pilot_root = pilot_root.resolve()
     path = pilot_root / 'decision.json'
     if not path.is_file():
         raise ValueError(f'Pilot decision missing: {path}')
     decision = read_json(path)
-    if decision.get('state') != 'pass' or decision.get('cfg_sha256') != config_hash:
-        raise ValueError('Pilot decision must pass for the current config')
+    if decision.get('cfg_sha256') != config_hash:
+        raise ValueError('Pilot decision does not match the current config')
+    decision_hash = core.file_hash(path)
+    state = decision.get('state')
+    if review_hash is not None:
+        if state != 'review' or review_hash != decision_hash:
+            raise ValueError('Formal settings do not match the recorded pilot review')
+    elif state != 'pass':
+        raise ValueError('Pilot review requires a recorded formal settings decision')
     expected = {(dataset, mode) for dataset in PILOT_DATASETS for mode in ('sum', 'mean')}
     receipts = decision.get('receipts', ())
     if len(receipts) != len(expected) or {(r['dataset'], r['mode']) for r in receipts} != expected:
@@ -105,7 +112,7 @@ def verify_gate(pilot_root, config_hash, signatures=None):
         verify_stage(manifest.parent, required=('base.pt', 'metrics.json', 'protocol.json'))
     if signatures is not None and decision.get('data_signatures') != signatures:
         raise ValueError('Formal dataset signatures differ from pilot admissions')
-    return core.file_hash(path)
+    return decision_hash
 
 
 def bound_receipt(path, contents):
@@ -139,6 +146,9 @@ def execute(job, spec, cfg, output, device, threads, parallelism):
     torch.set_num_threads(threads)
     # Restore the intended device for locally loaded code as well as the shared core object.
     os.environ['SSKA_DEVICE'] = device
+    mode = spec.get('table2_embedding_l2_mode', 'mean')
+    if 'table2_embedding_l2_mode' in spec:
+        cfg = dict(cfg, embedding_l2_mode=mode)
     status_path = output / 'jobs' / f'{job.key}.status.json'
     log_path = output / 'jobs' / f'{job.key}.log'
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -152,12 +162,12 @@ def execute(job, spec, cfg, output, device, threads, parallelism):
         print(f'{started_at} starting {job.key} pid={os.getpid()}', flush=True)
         core.dump(status_path, dict(state='running', pid=os.getpid(), job=job.key, started_at=started_at))
         if job.kind == 'base':
-            fit_backbone(spec, job.seed, folder, 'mean', status_path)
+            fit_backbone(spec, job.seed, folder, mode, status_path)
         elif job.kind == 'source':
-            prepare_source(spec, job.seed, folder, status_path)
-            base_evaluation(spec, job.seed, folder)
+            prepare_source(spec, job.seed, folder, status_path, mode)
+            base_evaluation(spec, job.seed, folder, mode)
         elif job.kind == 'readout':
-            base, caches, _envs, u = load_source(spec, job.seed, folder)
+            base, caches, _envs, u = load_source(spec, job.seed, folder, mode)
             position = spec['initial'].index(job.model)
             fit_readout(base, u, spec, caches, position, stage, cfg, job.seed, status_path)
         elif job.kind == 'single_task':
@@ -395,8 +405,10 @@ def report(output, cfg, jobs, specs):
         spec, seeds = specs[dataset], cfg['formal_seeds']
         elements = sum(spec['vocab'].values()) * spec['embed']
         counts = {split: len(rows) for split, rows in spec['sets'].items()}
+        mode = spec.get('table2_embedding_l2_mode', 'mean')
         entry = dict(rows=counts, input_dim=spec['xdim'], embedding_elements=elements,
-                     embedding_l2_per_element=cfg['training']['embedding_l2'] / elements, tasks={})
+                     embedding_l2_mode=mode, embedding_l2_per_element=core.embedding_l2_coefficient(
+                         spec, cfg['training']['embedding_l2'], mode), tasks={})
         compact[dataset] = entry
         full[dataset] = {}
         for task in spec['initial']:
@@ -423,6 +435,8 @@ def main():
         parser.add_argument(f'--{name}', type=Path, required=True)
     parser.add_argument('--cache-root', type=Path, default=Path('cache'))
     parser.add_argument('--device', default='cuda:0')
+    parser.add_argument('--regularization-decision', type=Path,
+                        help='Formal settings tied to a completed pilot review')
     parser.add_argument('--report-only', action='store_true')
     args = parser.parse_args()
     cfg = read_json(args.config)
@@ -432,19 +446,35 @@ def main():
         from .table2_v2_data import build_table2_spec
 
         config_hash = digest(cfg)
-        verify_gate(args.pilot_root, config_hash)
+        review_hash = None
+        modes = {}
+        if args.regularization_decision is not None:
+            formal = read_json(args.regularization_decision)
+            modes = formal['embedding_l2_modes']
+            review_hash = formal['pilot_decision_sha256']
+            if (formal['pilot_cfg_sha256'] != config_hash or not isinstance(review_hash, str)
+                    or len(review_hash) != 64 or set(modes) != set(cfg['order'])
+                    or any(mode not in ('sum', 'mean') for mode in modes.values())):
+                raise ValueError('Invalid formal regularization decision')
+        verify_gate(args.pilot_root, config_hash, review_hash=review_hash)
         torch.set_num_threads(cfg['execution']['threads_per_worker'])
         specs = {name: build_table2_spec(name, args.dataset_root, args.cache_root,
                                         output / 'data' / name, cfg['datasets'][name], source_root=args.source_root)
                  for name in cfg['order']}
         signatures = {name: digest(spec['data_signature']) for name, spec in specs.items()}
-        pilot_hash = verify_gate(args.pilot_root, config_hash, {name: signatures[name] for name in PILOT_DATASETS})
+        pilot_hash = verify_gate(args.pilot_root, config_hash,
+                                 {name: signatures[name] for name in PILOT_DATASETS}, review_hash=review_hash)
         admission = read_json(args.pilot_root / 'admission.json')
         if admission['cfg_sha256'] != config_hash or admission['data_signatures'] != signatures:
             raise ValueError('Formal dataset signatures differ from the full pilot admission')
+        for name, mode in modes.items():
+            specs[name]['table2_embedding_l2_mode'] = mode
         identity = dict(config_sha256=config_hash, config_file_sha256=core.file_hash(args.config),
                         pilot_decision_sha256=pilot_hash, data_signatures=signatures,
                         source_hashes=source_hashes(), vendor_and_baseline_hashes=code_hashes())
+        if args.regularization_decision is not None:
+            identity['regularization_decision_sha256'] = core.file_hash(args.regularization_decision)
+            identity['embedding_l2_modes'] = modes
         bound_receipt(output / 'identity.json', identity)
         try:
             if not args.report_only:

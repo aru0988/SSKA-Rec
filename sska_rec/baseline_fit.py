@@ -48,6 +48,11 @@ def protocol(spec, seed, variant, cfg):
                            ('dnn_l2', 3e-5)]:
         if cfg.get(name, expected) != expected:
             raise ValueError(f'Joint baseline protocol requires {name}={expected}')
+    regularization = {}
+    if 'embedding_l2_mode' in cfg:
+        mode = cfg['embedding_l2_mode']
+        regularization.update(embedding_l2_mode=mode,
+                              embedding_sum_coefficient=core.embedding_l2_coefficient(spec, .006, mode))
     return dict(version='table2-joint-baselines-v1', dataset=spec['dataset'],
                 variant=variant, paired_seed=seed, model_seed=seed,
                 tasks=list(spec['initial']), hidden=list(spec['hidden']),
@@ -57,7 +62,8 @@ def protocol(spec, seed, variant, cfg):
                 selection='mean-initial-task-val-auc-earliest-best',
                 loss='sum-initial-task-bce-plus-l2', shuffle=False, precision='float32',
                 optimizer='Adam', code=code_hashes(),
-                splits={s: _split_identity(spec, s, rows) for s, rows in spec['sets'].items()})
+                splits={s: _split_identity(spec, s, rows) for s, rows in spec['sets'].items()},
+                **regularization)
 
 
 def _check_probabilities(value):

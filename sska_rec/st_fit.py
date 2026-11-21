@@ -1,4 +1,4 @@
-"""Independent full-network SingleTask baselines with normalized embedding L2."""
+"""Independent full-network SingleTask baselines."""
 
 import copy
 import json
@@ -28,6 +28,8 @@ def _settings(spec, cfg):
             raise ValueError(f'SingleTask protocol requires {key}={expected}')
     if spec['dataset'] not in ('census', 'aliccp', 'kuairand'):
         raise ValueError('Unknown SingleTask dataset')
+    if 'embedding_l2_mode' in cfg:
+        values['embedding_l2_mode'] = cfg['embedding_l2_mode']
     return values
 
 
@@ -35,11 +37,10 @@ def build_single(spec, model_seed, cfg):
     """Seed and initialize a fresh embedding, MLP, and tower; every weight trains."""
     settings = _settings(spec, cfg)
     core.seed_all(model_seed)
-    elements = sum(spec['vocab'].values()) * spec['embed']
-    if elements <= 0:
-        raise ValueError('SingleTask requires a positive embedding element count')
+    coefficient = core.embedding_l2_coefficient(spec, settings['embedding_l2'],
+                                                 settings.get('embedding_l2_mode', 'mean'))
     model = SingleTask(spec['vocab'], spec['embed'], spec['xdim'], spec['hidden'],
-                       spec['tower'], settings['embedding_l2'] / elements,
+                       spec['tower'], coefficient,
                        settings['dnn_l2'],
                        dropout=[.1, .3] if spec['dataset'] == 'aliccp' else None)
     return model.float().to(core.DEVICE)

@@ -114,27 +114,27 @@ def fit_backbone(spec, seed, root_folder, mode, status_path):
     return base.eval().requires_grad_(False)
 
 
-def prepare_source(spec, seed, root_folder, status_path):
+def prepare_source(spec, seed, root_folder, status_path, mode='mean'):
     root = Path(root_folder)
-    read_backbone(spec, seed, root, 'mean')
+    read_backbone(spec, seed, root, mode)
     if (root/'source-ready.json').is_file():
-        return load_source(spec, seed, root)
-    base, _, _, u = training._prepare(core, normalized_spec(spec, 'mean'), seed, root, EPOCHS)
+        return load_source(spec, seed, root, mode)
+    base, _, _, u = training._prepare(core, normalized_spec(spec, mode), seed, root, EPOCHS)
     ready = dict(version=VERSION, seed=seed, data_sha256=digest(spec['data_signature']),
                  base_hash=core.model_hash(base), u_hash=core.model_hash(u),
                  base_protocol_sha256=core.file_hash(root/'source/base/protocol.json'),
                  ssl_manifest_sha256=core.file_hash(root/'source/ssl/COMMITTED.json'),
                  cache=_snapshot(root/'feature-cache'))
     core.dump(root/'source-ready.json', ready)
-    return load_source(spec, seed, root)
+    return load_source(spec, seed, root, mode)
 
 
-def load_source(spec, seed, root_folder):
+def load_source(spec, seed, root_folder, mode='mean'):
     folder = Path(root_folder)
     receipt = read_json(folder/'source-ready.json')
     if (receipt['version'], receipt['seed'], receipt['data_sha256']) != (VERSION, seed, digest(spec['data_signature'])):
         raise ValueError('SSKA source receipt identity differs')
-    base = read_backbone(spec, seed, folder, 'mean')
+    base = read_backbone(spec, seed, folder, mode)
     verify_stage(folder/'source/ssl', ['source.pt', 'metrics.json'])
     if (core.file_hash(folder/'source/base/protocol.json') != receipt['base_protocol_sha256']
             or core.file_hash(folder/'source/ssl/COMMITTED.json') != receipt['ssl_manifest_sha256']):
@@ -163,7 +163,7 @@ def load_source(spec, seed, root_folder):
     return base, caches, envs, u
 
 
-def base_evaluation(spec, seed, root_folder):
+def base_evaluation(spec, seed, root_folder, mode='mean'):
     root = Path(root_folder)
     path = root/'source-evaluation'
     source = read_json(root/'source-ready.json')
@@ -176,7 +176,7 @@ def base_evaluation(spec, seed, root_folder):
     _check_cache(root, source['cache'])
     training._committed(core, path)
     result = dict(paired_seed=seed, model_hash=source['base_hash'], variant='mpt',
-                  protocol=configuration(spec, seed, 'mean'))
+                  protocol=configuration(spec, seed, mode))
     raw = {}
     for split in ('val', 'test'):
         rows = spec['sets'][split]

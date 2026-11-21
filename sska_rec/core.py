@@ -299,6 +299,16 @@ def aliccp(initial, tiny=False, data_hashes=None):
     }
 
 
+def embedding_l2_coefficient(spec, value, mode):
+    """Coefficient of the half-sum of squared embedding weights."""
+    if mode not in ('sum', 'mean'):
+        raise ValueError('Unknown embedding L2 mode')
+    elements = sum(spec['vocab'].values()) * spec['embed']
+    if elements <= 0:
+        raise ValueError('Embedding regularization requires a positive parameter count')
+    return value / elements if mode == 'mean' else value
+
+
 def build_base(spec):
     kw = {"dropout": [0.1, 0.3]} if spec["dataset"] == "aliccp" else {}
     mode = spec.get("embedding_l2_normalization", "sum")
