@@ -304,8 +304,13 @@ def build_base(spec):
     mode = spec.get("embedding_l2_normalization", "sum")
     coefficient = 0.006
     if mode == "parameter_mean":
-        if spec["dataset"] != "kuairand":
-            raise ValueError("Normalized source protocol is registered only for KuaiRand")
+        if spec["dataset"] != "kuairand" and (
+            spec.get("table2_protocol") != "table2-two-task-v2-20261121"
+            or spec["dataset"] not in ("census", "aliccp")
+            or list(spec["tasks"]) != list(spec["initial"])
+            or len(spec["initial"]) != 2
+        ):
+            raise ValueError("Normalized source protocol requires a registered two-task input")
         elements = sum(spec["vocab"].values()) * spec["embed"]
         if elements <= 0 or spec.get("embedding_l2", .006) != .006:
             raise ValueError("Invalid normalized embedding regularization")

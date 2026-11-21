@@ -67,10 +67,10 @@ def _rowid_admission(sets):
         raise ValueError('Incomplete source rowids')
 
 
-def dataset_signature(spec, inputs):
+def dataset_signature(spec, inputs, *, blocked_features=None):
     """Validate exclusion/disjointness and hash rows, labels and model features."""
     _rowid_admission(spec['sets'])
-    blocked = {
+    blocked = blocked_features if blocked_features is not None else {
         'census': {'income', 'marital', 'label_income', 'label_marital', 'education', 'sex'},
         'aliccp': {'101', '301', 'CTR', 'CVR', 'BSI'},
         'kuairand': {'click', 'like', 'follow', 'forward', 'is_click', 'is_like', 'is_follow', 'is_forward'},
